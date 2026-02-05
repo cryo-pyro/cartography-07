@@ -302,3 +302,118 @@ if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
 
 ```
+
+```sh
+#!/usr/bin/env bash
+
+set -e  # Exit on error
+
+echo "=== Ukhona Atlas Setup ==="
+
+# -----------------------------
+# CONFIG
+# -----------------------------
+VENV_NAME=".venv"
+APP_FILE="app.py"
+PORT=5000
+
+# -----------------------------
+# CHECK PYTHON
+# -----------------------------
+if ! command -v python3 &> /dev/null; then
+    echo "❌ python3 not found. Install Python first."
+    exit 1
+fi
+
+# -----------------------------
+# CREATE VENV
+# -----------------------------
+if [ ! -d "$VENV_NAME" ]; then
+    echo "📦 Creating virtual environment..."
+    python3 -m venv $VENV_NAME
+else
+    echo "✅ Virtual environment exists."
+fi
+
+# -----------------------------
+# ACTIVATE VENV
+# -----------------------------
+echo "⚡ Activating virtual environment..."
+source $VENV_NAME/bin/activate
+
+# -----------------------------
+# CREATE requirements.txt
+# -----------------------------
+echo "📝 Creating requirements.txt..."
+
+cat > requirements.txt <<EOF
+flask
+folium
+qrcode[pil]
+pandas
+gunicorn
+EOF
+
+# -----------------------------
+# INSTALL DEPENDENCIES
+# -----------------------------
+echo "⬇️ Installing dependencies..."
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# -----------------------------
+# CREATE Procfile (Render / Heroku style)
+# -----------------------------
+echo "📝 Creating Procfile..."
+
+cat > Procfile <<EOF
+web: gunicorn app:app
+EOF
+
+# -----------------------------
+# CREATE render.yaml
+# -----------------------------
+echo "📝 Creating render.yaml..."
+
+cat > render.yaml <<EOF
+services:
+  - type: web
+    name: ukukhona-atlas
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+EOF
+
+# -----------------------------
+# CREATE .gitignore
+# -----------------------------
+echo "📝 Creating .gitignore..."
+
+cat > .gitignore <<EOF
+.venv/
+__pycache__/
+*.pyc
+.env
+EOF
+
+# -----------------------------
+# CHECK APP
+# -----------------------------
+if [ ! -f "$APP_FILE" ]; then
+    echo "❌ app.py not found in current directory."
+    exit 1
+fi
+
+# -----------------------------
+# RUN SERVER
+# -----------------------------
+echo "🚀 Starting Flask app..."
+echo "Open: http://127.0.0.1:$PORT"
+
+python $APP_FILE
+
+```
